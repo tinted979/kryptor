@@ -1,11 +1,22 @@
 mod cli;
 
-use cli::Cli;
+use std::fs::File;
+use std::process::ExitCode;
 
-fn main() {
+use cli::Cli;
+use kryptor::hash;
+
+fn main() -> ExitCode {
     let cli = Cli::parse();
 
-    println!("--- Arguments ---");
-    println!("File: {:?}", cli.file);
-    println!("Algorithm: {:?}", cli.algorithm);
+    match File::open(&cli.file).and_then(|file| hash::hash_reader(cli.algorithm, file)) {
+        Ok(digest) => {
+            println!("{digest}  {}", cli.file.display());
+            ExitCode::SUCCESS
+        }
+        Err(err) => {
+            eprintln!("kryptor: {}: {err}", cli.file.display());
+            ExitCode::FAILURE
+        }
+    }
 }
