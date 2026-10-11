@@ -59,6 +59,7 @@ fn hashes_file_with_selected_algorithm() {
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(output.status.success(), "stderr: {stderr}");
+    assert!(stderr.is_empty(), "should be quiet by default: {stderr}");
     assert_eq!(
         String::from_utf8_lossy(&output.stdout),
         format!(
@@ -66,6 +67,35 @@ fn hashes_file_with_selected_algorithm() {
             path.display()
         )
     );
+}
+
+#[test]
+#[cfg_attr(miri, ignore = "Miri can't spawn processes")]
+fn verbose_flag_logs_diagnostics_to_stderr() {
+    let path =
+        Path::new(env!("CARGO_TARGET_TMPDIR")).join("verbose_flag_logs_diagnostics_to_stderr");
+    fs::write(&path, "abc").expect("failed to write input file");
+    let path_str = path.display().to_string();
+
+    let output = Command::new(BIN)
+        .args(["-v", "-a", "md5"])
+        .arg(&path)
+        .output()
+        .expect("failed to run binary");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "stderr: {stderr}");
+    // Diagnostics must not leak into stdout, which scripts parse.
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        format!("900150983cd24fb0d6963f7d28e17f72  {path_str}\n")
+    );
+    for expected in ["finished hashing", "bytes=3", "algorithm=md5", &path_str] {
+        assert!(
+            stderr.contains(expected),
+            "missing {expected:?} in diagnostics: {stderr}"
+        );
+    }
 }
 
 #[test]
@@ -85,5 +115,13 @@ fn unreadable_file_is_an_error() {
     assert!(
         stderr.contains(&path.display().to_string()),
         "error should name the file: {stderr}"
+    );
+    // "Not found" is OS error 2 on both Windows and Unix. It must appear
+    // exactly once: missing means the cause was dropped, twice means it was
+    // printed by both the error and its source.
+    assert_eq!(
+        stderr.matches("(os error 2)").count(),
+        1,
+        "error should include its cause once: {stderr}"
     );
 }

@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use clap::builder::{PossibleValuesParser, TypedValueParser};
+use clap_verbosity_flag::{Verbosity, WarnLevel};
 use kryptor::hash::Algorithm;
 
 #[derive(Parser, Clone, Debug)]
@@ -12,6 +13,10 @@ pub struct Cli {
     /// Hash algorithm to use.
     #[arg(short, long, default_value_t, value_parser = algorithm_parser())]
     pub algorithm: Algorithm,
+
+    /// How much diagnostic output to print to stderr (`-v` / `-q`).
+    #[command(flatten)]
+    pub verbosity: Verbosity<WarnLevel>,
 }
 
 impl Cli {
