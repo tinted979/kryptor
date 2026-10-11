@@ -1,13 +1,8 @@
 use std::path::PathBuf;
 
-use clap::{Parser, ValueEnum};
-
-#[derive(ValueEnum, Clone, Copy, Default, Debug)]
-pub enum Algorithm {
-    #[default]
-    Sha256,
-    Sha512,
-}
+use clap::Parser;
+use clap::builder::{PossibleValuesParser, TypedValueParser};
+use kryptor::hash::Algorithm;
 
 #[derive(Parser, Clone, Debug)]
 pub struct Cli {
@@ -15,7 +10,7 @@ pub struct Cli {
     pub file: PathBuf,
 
     /// Hash algorithm to use.
-    #[arg(short, long, value_enum, default_value_t)]
+    #[arg(short, long, default_value_t, value_parser = algorithm_parser())]
     pub algorithm: Algorithm,
 }
 
@@ -24,6 +19,12 @@ impl Cli {
     pub fn parse() -> Self {
         <Self as Parser>::parse()
     }
+}
+
+/// Accepts exactly the names of [`Algorithm::ALL`] and lists them in `--help`.
+fn algorithm_parser() -> impl TypedValueParser<Value = Algorithm> {
+    PossibleValuesParser::new(Algorithm::ALL.iter().map(|algorithm| algorithm.name()))
+        .try_map(|name| Algorithm::from_name(&name).ok_or("unknown algorithm"))
 }
 
 #[cfg(test)]
@@ -45,7 +46,7 @@ mod tests {
         let args = parse(&["file.txt"]).expect("should parse");
 
         assert_eq!(args.file, PathBuf::from("file.txt"));
-        assert!(matches!(args.algorithm, Algorithm::Sha256));
+        assert_eq!(args.algorithm, Algorithm::Sha256);
     }
 
     #[test]
@@ -53,10 +54,21 @@ mod tests {
         for argv in [["-a", "sha512", "file.txt"], ["file.txt", "-a", "sha512"]] {
             let args = parse(&argv).expect("should parse");
 
-            assert!(
-                matches!(args.algorithm, Algorithm::Sha512),
-                "argv: {argv:?}"
-            );
+            assert_eq!(args.algorithm, Algorithm::Sha512, "argv: {argv:?}");
         }
+    }
+
+    #[test]
+    fn hyphenated_algorithm_names_parse() {
+        let args = parse(&["-a", "sha3-256", "file.txt"]).expect("should parse");
+
+        assert_eq!(args.algorithm, Algorithm::Sha3_256);
+    }
+
+    #[test]
+    fn unknown_algorithm_is_rejected() {
+        let err = parse(&["-a", "sha-256", "file.txt"]).expect_err("should fail");
+
+        assert_eq!(err.kind(), clap::error::ErrorKind::InvalidValue);
     }
 }
