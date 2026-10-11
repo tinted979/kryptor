@@ -17,7 +17,7 @@ jobs:
         name: Format
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@stable
               with:
                   components: rustfmt
@@ -27,7 +27,7 @@ jobs:
         name: Clippy
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@stable
               with:
                   components: clippy
@@ -42,7 +42,7 @@ jobs:
             matrix:
                 os: [ubuntu-latest, windows-latest, macos-latest]
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@stable
             - uses: Swatinem/rust-cache@v2
             - uses: taiki-e/install-action@v2
@@ -62,7 +62,7 @@ jobs:
                     - bans licenses sources
         continue-on-error: ${{ matrix.checks == 'advisories' }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
             - uses: EmbarkStudios/cargo-deny-action@v2
               with:
                   command: check ${{ matrix.checks }}
@@ -71,7 +71,7 @@ jobs:
         name: Miri
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
               with:
                   components: miri
