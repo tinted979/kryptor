@@ -1,7 +1,7 @@
 {
     "files.eol": "\n",
+    "editor.formatOnSave": true,
     "[rust]": {
-        "editor.formatOnSave": true,
         "editor.defaultFormatter": "rust-lang.rust-analyzer"
     },
     "rust-analyzer.check.command": "clippy",
@@ -16,5 +16,11 @@
         "**/.worktrees": true,
         "**/.claude/worktrees": true
     },
-    "terminal.integrated.defaultProfile.windows": "Git Bash"
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
+    "[yaml]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml",
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "editor.autoIndent": "full"
+    }
 }

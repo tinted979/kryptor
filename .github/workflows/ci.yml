@@ -1,0 +1,78 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+    fmt:
+        name: Format
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - uses: dtolnay/rust-toolchain@stable
+              with:
+                  components: rustfmt
+            - run: cargo fmt --all --check
+
+    clippy:
+        name: Clippy
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - uses: dtolnay/rust-toolchain@stable
+              with:
+                  components: clippy
+            - uses: Swatinem/rust-cache@v2
+            - run: cargo clippy --all-targets --all-features -- -D warnings
+
+    test:
+        name: Test (${{ matrix.os }})
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest, windows-latest, macos-latest]
+        steps:
+            - uses: actions/checkout@v5
+            - uses: dtolnay/rust-toolchain@stable
+            - uses: Swatinem/rust-cache@v2
+            - uses: taiki-e/install-action@v2
+              with:
+                  tool: nextest
+            - run: cargo nextest run --all-features --no-tests=warn
+            #- run: cargo test --doc --all-features
+
+    deny:
+        name: Dependencies (cargo-deny)
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                checks:
+                    - advisories
+                    - bans licenses sources
+        continue-on-error: ${{ matrix.checks == 'advisories' }}
+        steps:
+            - uses: actions/checkout@v5
+            - uses: EmbarkStudios/cargo-deny-action@v2
+              with:
+                  command: check ${{ matrix.checks }}
+
+    miri:
+        name: Miri
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - uses: dtolnay/rust-toolchain@nightly
+              with:
+                  components: miri
+            - run: cargo miri test
