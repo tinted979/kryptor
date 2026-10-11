@@ -1,8 +1,8 @@
 //! Every supported hash algorithm behind one interface.
 //!
-//! Pick an [`Algorithm`], then either hash a whole reader with
-//! [`hash_reader`] or feed data to a [`Hasher`] yourself, for example to
-//! report progress while hashing a large file.
+//! Pick an [`Algorithm`], then hash a file with [`hash_file`], a reader
+//! with [`hash_reader`], or feed data to a [`Hasher`] yourself, for example
+//! to report progress while hashing a large file.
 //!
 //! ```
 //! use kryptor::hash::{self, Algorithm};
@@ -16,7 +16,10 @@
 //! ```
 
 use std::fmt;
+use std::fs::File;
 use std::io::{self, BufReader, Read, Write};
+use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use digest::Digest as _;
 
@@ -293,13 +296,54 @@ impl fmt::Debug for Digest {
 ///
 /// Returns the first I/O error from `reader`. [`io::ErrorKind::Interrupted`]
 /// is retried, not returned.
+// `skip_all`: spans record only the fields listed, never arguments wholesale,
+// so nothing secret ends up in logs by accident.
+#[tracing::instrument(skip_all, fields(%algorithm))]
 pub fn hash_reader<R: Read>(algorithm: Algorithm, reader: R) -> io::Result<Digest> {
+    let started = Instant::now();
     let mut hasher = Hasher::new(algorithm);
-    io::copy(
+    let bytes = io::copy(
         &mut BufReader::with_capacity(READ_BUF_LEN, reader),
         &mut hasher,
     )?;
+    tracing::info!(bytes, elapsed = ?started.elapsed(), "finished hashing");
     Ok(hasher.finalize())
+}
+
+/// Hashes the contents of the file at `path`.
+///
+/// ```no_run
+/// use kryptor::hash::{self, Algorithm};
+///
+/// let digest = hash::hash_file(Algorithm::Blake3, "ubuntu.iso")?;
+/// println!("{digest}");
+/// # Ok::<(), kryptor::hash::HashFileError>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns [`HashFileError`] if the file can't be opened or read.
+#[tracing::instrument(skip_all, fields(path = %path.as_ref().display()))]
+pub fn hash_file(algorithm: Algorithm, path: impl AsRef<Path>) -> Result<Digest, HashFileError> {
+    let path = path.as_ref();
+    File::open(path)
+        .and_then(|file| hash_reader(algorithm, file))
+        .map_err(|source| HashFileError {
+            path: path.to_owned(),
+            source,
+        })
+}
+
+/// A file couldn't be hashed because opening or reading it failed.
+///
+/// The message names the file. The underlying [`io::Error`] is the
+/// [`source`](std::error::Error::source), not part of the message, so error
+/// reporters don't print it twice.
+#[derive(Debug, thiserror::Error)]
+#[error("cannot read {}", .path.display())]
+pub struct HashFileError {
+    path: PathBuf,
+    source: io::Error,
 }
 
 #[cfg(test)]
