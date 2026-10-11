@@ -5,7 +5,7 @@ Kryptor is an easy to use file hash generator written in Rust. Supports usage th
 - Check: `cargo check --all-targets`
 - Format: `cargo fmt --all`
 - Lint: `cargo clippy --all-targets --all-features -- -D warnings`
-- Test: `cargo nextest run --all-features` then `cargo test --doc` (nextest skips doctests)
+- Test: `cargo nextest run --all-features` then `cargo test --doc` (nextest skips doctests) then `cargo miri test`
 - Single test: `cargo nextest run <test_name>`
 - Before opening a PR: `cargo deny check`
 - Shell is Git Bash on Windows: use bash syntax and forward slashes, not PowerShell
