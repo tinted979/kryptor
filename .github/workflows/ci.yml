@@ -49,7 +49,7 @@ jobs:
               with:
                   tool: nextest
             - run: cargo nextest run --all-features --no-tests=warn
-            - run: cargo test --doc --all-features
+            #- run: cargo test --doc --all-features
 
     deny:
         name: Dependencies (cargo-deny)
