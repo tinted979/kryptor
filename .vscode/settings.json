@@ -1,0 +1,20 @@
+{
+    "files.eol": "\n",
+    "[rust]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    },
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.cargo.targetDir": true,
+    "files.watcherExclude": {
+        "**/target/**": true,
+        "**/.worktrees/**": true,
+        "**/.claude/worktrees/**": true
+    },
+    "search.exclude": {
+        "**/target": true,
+        "**/.worktrees": true,
+        "**/.claude/worktrees": true
+    },
+    "terminal.integrated.defaultProfile.windows": "Git Bash"
+}
