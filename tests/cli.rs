@@ -1,7 +1,6 @@
-// These tests spawn the compiled binary, which Miri can't do; the
-// argument-parsing logic is still covered under Miri by the unit
-// tests in src/cli.rs.
-#![cfg(not(miri))]
+// Every test here spawns the compiled binary, which Miri can't do, so
+// each one needs `#[cfg_attr(miri, ignore = ...)]`. Argument parsing is
+// still covered under Miri by the unit tests in src/cli.rs.
 
 mod common;
 
@@ -10,6 +9,7 @@ use common::BIN;
 use std::process::Command;
 
 #[test]
+#[cfg_attr(miri, ignore = "Miri can't spawn processes")]
 fn help_flag_prints_usage() {
     let output = Command::new(BIN)
         .arg("--help")
@@ -29,6 +29,7 @@ fn help_flag_prints_usage() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore = "Miri can't spawn processes")]
 fn missing_file_is_a_usage_error() {
     let output = Command::new(BIN).output().expect("failed to run binary");
 
