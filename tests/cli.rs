@@ -1,3 +1,8 @@
+// These tests spawn the compiled binary, which Miri can't do; the
+// argument-parsing logic is still covered under Miri by the unit
+// tests in src/cli.rs.
+#![cfg(not(miri))]
+
 mod common;
 
 use common::BIN;
